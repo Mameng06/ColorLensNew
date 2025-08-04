@@ -111,6 +111,14 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
+    
+    // Set default variant to resolve ambiguity
+    variantFilter { variant ->
+        def flavors = variant.getFlavors()
+        if (variant.buildType.name == 'debug' && (!flavors || flavors[0].name != 'general')) {
+            variant.setIgnore(true)
+        }
+    }
 }
 
 dependencies {
@@ -126,6 +134,12 @@ dependencies {
     
     // Add react-native-camera dependency
     implementation project(':react-native-camera')
+    
+    // TensorFlow Lite dependencies
+    implementation 'org.tensorflow:tensorflow-lite:2.14.0'
+    implementation 'org.tensorflow:tensorflow-lite-support:0.4.4'
+    implementation 'org.tensorflow:tensorflow-lite-metadata:0.4.4'
+    implementation 'org.tensorflow:tensorflow-lite-gpu:2.14.0'
 }
 
 apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle"); applyNativeModulesAppBuildGradle(project)

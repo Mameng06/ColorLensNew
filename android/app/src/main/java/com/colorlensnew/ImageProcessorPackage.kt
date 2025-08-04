@@ -7,7 +7,10 @@ import com.facebook.react.uimanager.ViewManager
 
 class ImageProcessorPackage : ReactPackage {
     override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
-        return listOf(ImageProcessorModule(reactContext))
+        return listOf(
+            ImageProcessorModule(reactContext),
+            AIColorDetectorModule(reactContext)
+        )
     }
 
     override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> {

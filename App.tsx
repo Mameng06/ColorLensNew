@@ -11,21 +11,21 @@ import {
   StyleSheet,
   Text,
   View,
-  Dimensions,
   TouchableOpacity,
   Alert,
 } from 'react-native';
 import Tts from 'react-native-tts';
 import CameraComponent from './CameraComponent';
-
-const {width, height} = Dimensions.get('window');
+import { AIColorDetector } from './AIColorDetector';
 
 function App(): React.JSX.Element {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [isActive, setIsActive] = useState(false);
   const [detectedColor, setDetectedColor] = useState('#FFFFFF');
   const [colorName, setColorName] = useState('White');
+  const [hsvValues, setHsvValues] = useState({ hue: 0, saturation: 0, value: 0 });
   const [lastSpokenColor, setLastSpokenColor] = useState('');
+  const [lastSpokenTime, setLastSpokenTime] = useState(0);
 
   useEffect(() => {
     // Initialize TTS
@@ -33,7 +33,16 @@ function App(): React.JSX.Element {
     Tts.setDefaultRate(0.5);
     Tts.setDefaultPitch(1.0);
     
-    // For now, we'll simulate camera permission
+    // Initialize AI Model
+    const initializeAI = async () => {
+      try {
+        await AIColorDetector.initializeModel();
+      } catch (error) {
+        console.error('Failed to initialize AI model:', error);
+      }
+    };
+    
+    initializeAI();
     setHasPermission(true);
   }, []);
 
@@ -56,14 +65,25 @@ function App(): React.JSX.Element {
     setIsActive(!isActive);
   };
 
-  const handleColorDetected = (color: string, name: string) => {
+  const handleColorDetected = (color: string, name: string, hsv?: { hue: number, saturation: number, value: number }) => {
     setDetectedColor(color);
     setColorName(name);
+    if (hsv) {
+      setHsvValues(hsv);
+    }
     
-    // Speak the color name if it's different from the last spoken color
-    if (name !== lastSpokenColor) {
+    // Speak the color name every 3 seconds if it's the same color
+    const now = Date.now();
+    const timeSinceLastSpoken = now - lastSpokenTime;
+    const shouldSpeak = name.trim() !== '' && (
+      name !== lastSpokenColor || 
+      timeSinceLastSpoken > 3000
+    );
+    
+    if (shouldSpeak) {
       Tts.speak(name);
       setLastSpokenColor(name);
+      setLastSpokenTime(now);
     }
   };
 
@@ -102,8 +122,11 @@ function App(): React.JSX.Element {
 
       {/* Color Display */}
       <View style={styles.colorDisplay}>
-        <Text style={styles.colorText}>Detected Color: {detectedColor}</Text>
-        <Text style={styles.colorName}>{colorName}</Text>
+        <Text style={styles.colorText}>Detected Color: {colorName}</Text>
+        <Text style={styles.colorName}>{detectedColor}</Text>
+        <Text style={styles.hsvText}>
+          AI HSV: H:{hsvValues.hue.toFixed(0)}° S:{hsvValues.saturation.toFixed(0)}% V:{hsvValues.value.toFixed(0)}%
+        </Text>
         <Text style={styles.ttsStatus}>Voice Output: Active</Text>
       </View>
 
@@ -137,47 +160,6 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
   },
-  cameraPlaceholder: {
-    flex: 1,
-    backgroundColor: '#333',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cameraText: {
-    color: '#fff',
-    fontSize: 18,
-    textAlign: 'center',
-  },
-  crosshairContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  crosshairHorizontal: {
-    position: 'absolute',
-    width: 60,
-    height: 2,
-    backgroundColor: '#fff',
-    borderRadius: 1,
-  },
-  crosshairVertical: {
-    position: 'absolute',
-    width: 2,
-    height: 60,
-    backgroundColor: '#fff',
-    borderRadius: 1,
-  },
-  centerDot: {
-    position: 'absolute',
-    width: 8,
-    height: 8,
-    backgroundColor: '#ff0000',
-    borderRadius: 4,
-  },
   colorDisplay: {
     backgroundColor: '#222',
     padding: 20,
@@ -192,6 +174,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 24,
     fontWeight: 'bold',
+  },
+  hsvText: {
+    color: '#fff',
+    fontSize: 14,
+    marginTop: 5,
+    marginBottom: 5,
   },
   controls: {
     padding: 20,

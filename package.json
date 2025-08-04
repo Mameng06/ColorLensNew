@@ -3,11 +3,11 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "android": "react-native run-android",
-    "android-build": "cd android && gradlew.bat app:installGeneralDebug -PreactNativeDevServerPort=8081",
+    "android": "react-native run-android --tasks=installGeneralDebug",
+    "android-build": "cd android && gradlew.bat app:installGeneralDebug",
+    "start": "react-native start",
     "ios": "react-native run-ios",
     "lint": "eslint .",
-    "start": "react-native start",
     "test": "jest"
   },
   "dependencies": {
